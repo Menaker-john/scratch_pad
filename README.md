@@ -6,7 +6,7 @@
 
 ## What is Scratch Pad
 
-Scratch Pad is a simple note pad made in Rust with eframe
+Scratch Pad is a simple note pad made in Rust utilizing the [eframe](https://crates.io/crates/eframe) crate.
 
 ![Screenshot_20220930_124751](https://user-images.githubusercontent.com/25320915/193327810-a8cfb2c2-ed0f-464f-b3d5-a801b9c92e7c.png)
 
