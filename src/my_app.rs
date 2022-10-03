@@ -25,15 +25,9 @@ impl Default for Note {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct MyApp {
     notes: Vec<Note>,
-}
-
-impl Default for MyApp {
-    fn default() -> Self {
-        Self { notes: Vec::new() }
-    }
 }
 
 impl App for MyApp {
