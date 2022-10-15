@@ -79,7 +79,10 @@ impl MyApp {
                     .show(ctx, |ui| {
                         ui.text_edit_singleline(&mut note.name);
                         ui.add_space(PADDING / 2.0);
-                        ui.add_sized(ui.available_size(), TextEdit::multiline(&mut note.content));
+                        ui.add_sized(
+                            ui.available_size(),
+                            TextEdit::multiline(&mut note.content).lock_focus(true),
+                        );
                     });
             }
         });
