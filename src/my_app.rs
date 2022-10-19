@@ -1,8 +1,16 @@
+use chrono::{DateTime, Utc};
 use eframe::{
-    egui::{CentralPanel, Context, Id, TextEdit, TopBottomPanel, Window},
-    get_value, set_value, App, CreationContext, Storage, APP_KEY,
+    egui::{Align, CentralPanel, Context, Id, Layout, TextEdit, TopBottomPanel, Window},
+    get_value, set_value, App, CreationContext, Frame, Storage, APP_KEY,
 };
 use serde::{Deserialize, Serialize};
+use std::{
+    fs::{DirBuilder, File},
+    io::Write,
+    path::PathBuf,
+    slice::Iter,
+    time::SystemTime,
+};
 
 const PADDING: f32 = 5.0;
 
@@ -35,7 +43,7 @@ impl App for MyApp {
         set_value(storage, APP_KEY, self);
     }
 
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         for i in (0..self.notes.len()).rev() {
             if !self.notes[i].open {
                 self.notes.remove(i);
@@ -59,9 +67,28 @@ impl MyApp {
         TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.add_space(PADDING);
 
-            if ui.button("New Note").clicked() {
-                self.notes.push(Note::default())
-            }
+            ui.horizontal(|ui| {
+                ui.menu_button("Menu", |ui| {
+                    if ui.button("Export").clicked() {
+                        Self::on_export_pressed(self);
+                        ui.close_menu();
+                    }
+                    if ui.button("Import").clicked() {
+                        //TODO:
+                        ui.close_menu();
+                    }
+                    if ui.button("Delete All Notes").clicked() {
+                        //TODO:
+                        ui.close_menu();
+                    }
+                });
+
+                ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
+                    if ui.button("New Note").clicked() {
+                        self.notes.push(Note::default())
+                    }
+                });
+            });
 
             ui.add_space(PADDING);
         });
@@ -94,5 +121,63 @@ impl MyApp {
         }
 
         title
+    }
+
+    fn on_export_pressed(&mut self) {
+        if let Some(path) = Self::create_dir() {
+            Self::write_note_files(self.notes.iter(), path);
+        } else {
+            // display message unable to export data
+        }
+    }
+
+    fn create_dir() -> Option<PathBuf> {
+        if let Some(mut path) = dirs::home_dir() {
+            path.push("scratchpad/exports");
+            path.push(Self::create_dir_name());
+
+            println!("{:?}", path);
+
+            match DirBuilder::new().recursive(true).create(path.as_path()) {
+                Ok(_) => return Some(path),
+                Err(_) => return None,
+            }
+        } else {
+            return None;
+        }
+    }
+
+    fn create_dir_name() -> String {
+        let now = SystemTime::now();
+        let now: DateTime<Utc> = now.into();
+        format!("export_{}", now.to_rfc3339())
+    }
+
+    fn write_note_files(notes: Iter<Note>, path: PathBuf) {
+        for note in notes {
+            let path_buf = Self::filename(path.to_owned(), note.name.to_string());
+            let output = File::create(path_buf);
+            let mut output = match output {
+                Ok(file) => file,
+                Err(error) => {
+                    panic!("Problem creating file: {:?}", error);
+                }
+            };
+
+            write!(output, "{}", note.content).expect("Failed to write to file");
+        }
+    }
+
+    fn filename(mut filepath: PathBuf, name: String) -> PathBuf {
+        let mut counter: usize = 0;
+        filepath.push(format!("{}", name));
+
+        while filepath.exists() {
+            counter += 1;
+            filepath.pop();
+            filepath.push(format!("{}({})", name, counter));
+        }
+
+        filepath
     }
 }
